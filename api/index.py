@@ -1,8 +1,6 @@
 # api/index.py
 import time
-import hashlib
-import hmac
-from urllib.parse import parse_qs
+
 from flask import Flask, request, render_template_string
 
 # Vercel ожидает найти переменную 'app'
