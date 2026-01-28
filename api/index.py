@@ -9,7 +9,7 @@ import hmac
 import os
 import time
 
-from flask import Flask, request, abort, render_template_string
+from flask import Flask, request, jsonify, render_template_string
 app = Flask(__name__)
 
 
@@ -501,38 +501,31 @@ def handle_all_requests():
     Основная функция Vercel. 
     Получает запрос, проверяет параметры URL, генерирует и возвращает полный HTML.
     """
-    is_authorized = False
     is_subscribed = False
-    forks_html = "" # Заглушка контента на случай ошибки
 
-    # 1. Извлекаем параметры из URL-строки запроса
-    query_string = request.query_string.decode('utf-8')
-    auth_data = parse_qs(query_string)
-    # parse_qs возвращает списки, нужно преобразовать в простые значения
-    auth_data = {k: v[0] for k, v in auth_data.items()}
+    # # 1. Извлекаем параметры из URL-строки запроса
+    # query_string = request.query_string.decode('utf-8')
+    # auth_data = parse_qs(query_string)
+    # # parse_qs возвращает списки, нужно преобразовать в простые значения
+    # auth_data = {k: v[0] for k, v in auth_data.items()}
 
-    print(auth_data)
+    auth_data = request.args 
+
     # 2. Проверяем авторизацию Telegram
     if auth_data.get('id') and auth_data.get('hash'):
         if verify_telegram_signature(auth_data):
             # Проверяем срок годности данных
-            auth_date = int(auth_data.get('auth_date', 0))
-            if time.time() - auth_date <= 86400:
-                is_authorized = True
-                user_id = int(auth_data.get('id'))
-                user_info = USERS_DATA.get(user_id)
-                if user_info and user_info['is_subscribed']:
-                    is_subscribed = True
-                
-                # 3. Генерируем контент, соответствующий статусу подписки
-                result_html = create_service_html(is_subscribed=is_subscribed)
-            else:
-                result_html = "<p>Ошибка: Срок действия данных Telegram истек.</p>"
+
+            user_id = int(auth_data.get('id'))
+            user_info = USERS_DATA.get(user_id)
+            if user_info and user_info['is_subscribed']:
+                is_subscribed = True
+                               
+            result_html = create_service_html(is_subscribed=is_subscribed)
+
         else:
-            result_html = "<p>Ошибка: Неверная подпись Telegram.</p>"
+            result_html = "<p> Ошибка: Неверная подпись Telegram.</p>"
     else:
-        result_html = "<p>Ошибка</p>"
+        result_html = "<p> Ошибка идентификации </p>"
     
     return render_template_string(result_html)
-
-    
