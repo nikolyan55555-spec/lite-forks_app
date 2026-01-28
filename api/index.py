@@ -35,5 +35,5 @@ def handler():
     result_html = "<p>Telegram.</p>"
 
     # Flask имеет встроенную функцию render_template_string
-    return render_template_string(result_html)
+    return render_template_string("<p>Telegram.</p>")
 
