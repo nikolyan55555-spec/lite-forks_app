@@ -3,9 +3,8 @@ name = "lite-forks-app"
 version = "0.1.0"
 description = "Vercel deployment for forks app"
 requires-python = ">=3.11"
-
-[project.dependencies]
-Flask = ">=2.0.0" 
-# Можно просто Flask = "*" если не хотите указывать конкретную версию
+dependencies = [
+    "Flask>=2.0.0"
+]
 
 [tool.uv]
