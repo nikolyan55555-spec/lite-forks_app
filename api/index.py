@@ -1,6 +1,4 @@
 # api/index.py
-import time
-
 from flask import Flask, request, render_template_string
 
 # Vercel ожидает найти переменную 'app'
