@@ -511,6 +511,12 @@ def handle_all_requests():
 
     # auth_data = request.args
     auth_data = request.get_json()
+    url_params = dict(request.args)
+    response_data = {
+        "method": request.method,
+        "url_params": url_params,
+        "message": "Проверьте поля выше на наличие данных пользователя (id, hash, initData)."
+    }
     return jsonify(auth_data)
 
     # 2. Проверяем авторизацию Telegram
