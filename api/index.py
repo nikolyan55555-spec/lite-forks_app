@@ -26,7 +26,7 @@ app = Flask(__name__)
 
 
 @app.route('/')
-def handler():
+def handle_all_requests():
     """
     Основная функция Vercel. 
     Получает запрос, проверяет параметры URL, генерирует и возвращает полный HTML.
