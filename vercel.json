@@ -1,0 +1,12 @@
+{
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/app/index.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/app/index.py"
+    }
+  ]
+}
