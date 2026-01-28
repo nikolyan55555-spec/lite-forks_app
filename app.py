@@ -9,6 +9,9 @@ import hmac
 import os
 import time
 
+from flask import Flask, request, abort, render_template_string
+app = Flask(__name__)
+
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "fallback_token")
 
@@ -492,7 +495,8 @@ def verify_telegram_signature(data):
     return hmac_hash.hexdigest() == data['hash']
 
 
-def handler(request):
+@app.route('/')
+def handler():
     """
     Основная функция Vercel. 
     Получает запрос, проверяет параметры URL, генерирует и возвращает полный HTML.
@@ -526,4 +530,4 @@ def handler(request):
         else:
             result_html = "<p>Ошибка: Неверная подпись Telegram.</p>"
     
-    return result_html, 200, {'Content-Type': 'text/html'}
+    return render_template_string(result_html)
