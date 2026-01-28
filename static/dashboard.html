@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Панель управления</title>
+</head>
+<body>
+    <h1>Добро пожаловать в защищенную область!</h1>
+    <p>Ваши данные: <strong id="userData">Загрузка...</strong></p>
+
+    <script>
+        const token = localStorage.getItem('user_token');
+
+        if (!token) {
+            window.location.href = "/index.html"; // Если нет токена, возвращаем на вход
+        } else {
+            // Используем токен для запроса защищенных данных с сервера
+            fetch('/api/user_data', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.user) {
+                    document.getElementById('userData').innerText = `ID: ${data.user.user_id}, Имя: ${data.user.username}`;
+                } else {
+                    document.getElementById('userData').innerText = "Не удалось загрузить данные (токен недействителен).";
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('userData').innerText = "Ошибка сети.";
+            });
+        }
+    </script>
+</body>
+</html>
