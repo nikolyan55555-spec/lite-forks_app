@@ -509,7 +509,8 @@ def handle_all_requests():
     # # parse_qs возвращает списки, нужно преобразовать в простые значения
     # auth_data = {k: v[0] for k, v in auth_data.items()}
 
-    auth_data = request.args 
+    auth_data = request.args
+    return jsonify(auth_data)
 
     # 2. Проверяем авторизацию Telegram
     if auth_data.get('id') and auth_data.get('hash'):
