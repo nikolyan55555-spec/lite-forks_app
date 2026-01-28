@@ -7,18 +7,9 @@
     }
   ],
   "routes": [
-
-    {
-      "src": "/",
-      "dest": "/static/index.html"
-    },
     {
       "src": "/api/(.*)",
       "dest": "/api/index.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/static/$1"
     }
   ]
 }
