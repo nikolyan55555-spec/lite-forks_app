@@ -14,7 +14,7 @@ app = Flask(__name__)
 
 
 # TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "fallback_token")
-TELEGRAM_BOT_TOKEN = "8385615154:AAEwVHr3LcUVkDAL5NiJSImOy2trol_YRp0"
+TELEGRAM_BOT_TOKEN = "7729523904:AAEVyCNLL9NXyr_3tJ3TzxUTK94OwJr2GuA"
 
 PAID_FORKS_FILES = {
     'football': 'RESULTS/football/prod/paid.json'
@@ -509,7 +509,8 @@ def handle_all_requests():
     # # parse_qs возвращает списки, нужно преобразовать в простые значения
     # auth_data = {k: v[0] for k, v in auth_data.items()}
 
-    auth_data = request.args
+    # auth_data = request.args
+    auth_data = request.get_json()
     return jsonify(auth_data)
 
     # 2. Проверяем авторизацию Telegram
