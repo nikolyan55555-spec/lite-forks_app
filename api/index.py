@@ -11,18 +11,18 @@ app = Flask(__name__)
 #     12345678: {'is_subscribed': True} 
 # }
 
-def verify_telegram_signature(data):
-    """(Заглушка) Реализуйте здесь вашу функцию верификации из предыдущего ответа."""
-    # Ваша реальная функция проверки хэша здесь
-    return False # В тестовых целях пока вернем True
+# def verify_telegram_signature(data):
+#     """(Заглушка) Реализуйте здесь вашу функцию верификации из предыдущего ответа."""
+#     # Ваша реальная функция проверки хэша здесь
+#     return False # В тестовых целях пока вернем True
 
-def create_service_html(is_subscribed):
-    """(Заглушка) Генерирует HTML в зависимости от подписки."""
-    if is_subscribed:
-        return "<h1>Добро пожаловать, подписчик!</h1><p>Ваш секретный контент здесь.</p>"
-    else:
-        return "<h1>Вы не подписаны</h1><p>Пожалуйста, подпишитесь на канал, чтобы увидеть контент.</p>"
-# --- КОНЕЦ ЗАГЛУШЕК ---
+# def create_service_html(is_subscribed):
+#     """(Заглушка) Генерирует HTML в зависимости от подписки."""
+#     if is_subscribed:
+#         return "<h1>Добро пожаловать, подписчик!</h1><p>Ваш секретный контент здесь.</p>"
+#     else:
+#         return "<h1>Вы не подписаны</h1><p>Пожалуйста, подпишитесь на канал, чтобы увидеть контент.</p>"
+# # --- КОНЕЦ ЗАГЛУШЕК ---
 
 
 @app.route('/')
@@ -45,21 +45,22 @@ def handler():
 
     # 2. Проверяем авторизацию Telegram
     if auth_data.get('id') and auth_data.get('hash'):
-        if verify_telegram_signature(auth_data):
-            # Проверяем срок годности данных
-            # Flask request.args возвращает строки, нужно преобразовать в int
+        result_html = "<p>Telegram.</p>"
+        # if verify_telegram_signature(auth_data):
+        #     # Проверяем срок годности данных
+        #     # Flask request.args возвращает строки, нужно преобразовать в int
      
-            # user_id = int(auth_data.get('id'))
-            # user_info = USERS_DATA.get(user_id)
-            # if user_info and user_info['is_subscribed']:
-            #     is_subscribed = True
+        #     # user_id = int(auth_data.get('id'))
+        #     # user_info = USERS_DATA.get(user_id)
+        #     # if user_info and user_info['is_subscribed']:
+        #     #     is_subscribed = True
             
-            # # 3. Генерируем контент, соответствующий статусу подписки
-            # result_html = create_service_html(is_subscribed=is_subscribed)
-            result_html = "<p>Telegram.</p>"
+        #     # # 3. Генерируем контент, соответствующий статусу подписки
+        #     # result_html = create_service_html(is_subscribed=is_subscribed)
+        #     result_html = "<p>Telegram.</p>"
 
-        else:
-            result_html = "<p>Ошибка: Неверная подпись Telegram.</p>"
+        # else:
+        #     result_html = "<p>Ошибка: Неверная подпись Telegram.</p>"
     else:
         result_html = "<p>Ошибка: Нет данных авторизации Telegram.</p>"
     
