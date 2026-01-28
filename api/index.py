@@ -495,7 +495,7 @@ def verify_telegram_signature(data):
     return hmac_hash.hexdigest() == data['hash']
 
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def handle_all_requests():
     """
     Основная функция Vercel. 
