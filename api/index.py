@@ -536,8 +536,8 @@ def handler():
     return render_template_string(result_html)
 
 
-# if __name__ == "__main__":
-#     # Убедитесь, что все зависимости (Flask) установлены локально
-#     # pip install Flask
-#     print("Starting Flask server locally on http://127.0.0.1")
-#     app.run(debug=True, port=5000)
+if __name__ == "__main__":
+    # Запускаем локальный сервер для отладки
+    print("Starting Flask server locally on http://127.0.0.1")
+    app.run(debug=True, port=5000)
+    
