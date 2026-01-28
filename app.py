@@ -13,8 +13,8 @@ from flask import Flask, request, abort, render_template_string
 app = Flask(__name__)
 
 
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "fallback_token")
-
+# TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "fallback_token")
+TELEGRAM_BOT_TOKEN = "8385615154:AAEwVHr3LcUVkDAL5NiJSImOy2trol_YRp0"
 
 PAID_FORKS_FILES = {
     'football': 'RESULTS/football/prod/paid.json'
@@ -511,6 +511,7 @@ def handler():
     # parse_qs возвращает списки, нужно преобразовать в простые значения
     auth_data = {k: v[0] for k, v in auth_data.items()}
 
+    print(auth_data)
     # 2. Проверяем авторизацию Telegram
     if auth_data.get('id') and auth_data.get('hash'):
         if verify_telegram_signature(auth_data):
@@ -529,5 +530,14 @@ def handler():
                 result_html = "<p>Ошибка: Срок действия данных Telegram истек.</p>"
         else:
             result_html = "<p>Ошибка: Неверная подпись Telegram.</p>"
+    else:
+        result_html = "<p>Ошибка</p>"
     
     return render_template_string(result_html)
+
+
+# if __name__ == "__main__":
+#     # Убедитесь, что все зависимости (Flask) установлены локально
+#     # pip install Flask
+#     print("Starting Flask server locally on http://127.0.0.1")
+#     app.run(debug=True, port=5000)
