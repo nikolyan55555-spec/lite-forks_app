@@ -7,7 +7,10 @@ from datetime import datetime
 import logging
 
 import requests
-from flask import Flask, render_template_string
+from flask import Flask, render_template, redirect, url_for, flash, request, render_template_string
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField
+from wtforms.validators import DataRequired, Length
 
 
 logging.basicConfig(
@@ -16,7 +19,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger('FlaskAPP')
 
+SECRET_APP_KEY = 'gT8XzLyP5qR2sT4vW7yB!E(H+MbQeThWmZq4t7w9z$C&F)J@NcRfUjXn2r5u8x/A?D(G+KaPdSgVkYp3s6v9y$' 
+
 app = Flask(__name__)
+app.config['SECRET_KEY'] = SECRET_APP_KEY
 
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_OWNER = 'nikolyan55555-spec'
@@ -488,15 +494,45 @@ def create_service_html(forks_data: Dict, is_subscribed: bool):
     return html_content
 
 
-
+class TokenForm(FlaskForm):
+    # Поле Token: Обязательно для заполнения, длина от 5 до 50 символов
+    token = StringField('Введите Токен', validators=[DataRequired(), Length(min=5, max=50)])
+    submit = SubmitField('Подтвердить')
 
 
 @app.route('/')
+def index():
+    # Перенаправляем на страницу ввода токена при входе
+    return redirect(url_for('validate_token'))
+
+
+@app.route('/validate_token', methods=['GET', 'POST'])
+def validate_token():
+    form = TokenForm()
+
+    if form.validate_on_submit():
+        # Если данные валидны и метод POST
+        user_token = form.token.data
+        
+        # *** ЗДЕСЬ ВАША ЛОГИКА ПРОВЕРКИ ТОКЕНА ***
+        # Например, проверка в базе данных или сравнение с переменной окружения
+        
+        print(f"Получен токен: {user_token}")
+        flash('Токен успешно принят и обработан!', 'success')
+        
+        # Перенаправляем пользователя на основной функционал приложения
+        return redirect(url_for('main_functionality'))
+
+    # Если метод GET или валидация не пройдена
+    return render_template('token_form.html', form=form)
+
+
+@app.route('/main')
 def home():
     forks_data = get_json_data_from_git(path=DATA_FILE_PATH)
     html_content = create_service_html(forks_data=forks_data, is_subscribed=True)
     return render_template_string(html_content)
 
 
-# if __name__ == "__main__":
-#     app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=True)
