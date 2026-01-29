@@ -4,10 +4,17 @@ from datetime import datetime
 import os
 import base64
 from datetime import datetime
+import logging
 
 import requests
 from flask import Flask, render_template_string
 
+
+logging.basicConfig(
+    level=logging.INFO,   
+    format='[%(name)s] %(asctime)s %(levelname)s %(message)s',
+)
+logger = logging.getLogger('FlaskAPP')
 
 app = Flask(__name__)
 
@@ -47,6 +54,7 @@ def get_json_data_from_git(path: str) -> Dict:
         url=api_url,
         headers=headers
     )
+    logger.info(f"RESPONSE: {response.status_code}")
     return response.json()
     
 
