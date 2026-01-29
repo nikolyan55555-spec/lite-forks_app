@@ -1,27 +1,22 @@
+from typing import Dict
 import textwrap
 from datetime import datetime
-import json
+import os
 import base64
 from datetime import datetime
-from urllib.parse import parse_qs
-import hashlib
-import hmac
-import time
 
-from flask import Flask, request, abort, render_template_string
+import requests
+from flask import Flask, render_template_string
+
+
 app = Flask(__name__)
 
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+GITHUB_OWNER = 'nikolyan55555-spec'
+GITHUB_REPO = 'lite-forks_storage'
+USERS_FILE_PATH = 'users.json'
+DATA_FILE_PATH = 'forks.json'
 
-# TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "fallback_token")
-TELEGRAM_BOT_TOKEN = "7729523904:AAEVyCNLL9NXyr_3tJ3TzxUTK94OwJr2GuA"
-
-PAID_FORKS_FILES = {
-    'football': 'RESULTS/football/prod/paid.json'
-}
-
-FREE_FORKS_FILES = {
-    'football': 'RESULTS/football/prod/free.json'
-}
 SPORTS_MAPPER = {
     'football': {
         'name': 'Футбол',
@@ -30,14 +25,32 @@ SPORTS_MAPPER = {
     }
 }
 NOMINAL_VALUE = 1000
+
 LOGO_PATH = 'static/logo.png'
+try:
+    with open(LOGO_PATH, "rb") as f:
+        logo_data = base64.b64encode(f.read()).decode("utf-8")
+        # Формируем data URL:
+        LOGO_SRC = f"data:image/png;base64,{logo_data}"
+except FileNotFoundError:
+    LOGO_SRC = ""
+    print("Error: logo.png not found for Base64 encoding.")
 
 
-USERS_DATA = {
-    123456789: {'is_subscribed': True, 'username': 'testuser1'},
-    987654321: {'is_subscribed': False, 'username': 'testuser2'},
-}
-
+def get_json_data_from_git(path: str) -> Dict:
+    api_url = f'https://raw.githubusercontent.com/{GITHUB_OWNER}/{GITHUB_REPO}/main/{path}'
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+    }
+    try:
+        response = requests.get(
+            url=api_url,
+            headers=headers
+        )
+        return response.json()
+    except Exception as e:
+        return {}
+    
 
 def generate_fork_block_html(fork_data, include_event_link=False):
     event_time_fmt = datetime.strptime(fork_data['event_time'], '%Y-%m-%d %H:%M:%S').strftime('%d.%m.%Y %H:%M')
@@ -82,28 +95,13 @@ def generate_fork_block_html(fork_data, include_event_link=False):
     """)
 
 
-def create_service_html(is_subscribed: bool):
-
-    try:
-        with open(LOGO_PATH, "rb") as f:
-            logo_data = base64.b64encode(f.read()).decode("utf-8")
-            # Формируем data URL:
-            logo_src = f"data:image/png;base64,{logo_data}"
-    except FileNotFoundError:
-        logo_src = ""
-        print("Error: logo.png not found for Base64 encoding.")
+def create_service_html(forks_data: Dict, is_subscribed: bool):
 
     RAW_FORKS_LIST = []
-    if is_subscribed:
-        FORKS_FILES = PAID_FORKS_FILES.copy()
-    else:
-        FORKS_FILES = FREE_FORKS_FILES.copy()
-    for sport_name, fork_file in FORKS_FILES.items():
-        with open(fork_file, 'r') as f:
-            json_data = json.load(f)
-        for fork in json_data:
+    for sport_name, fork_list in forks_data.items():
+        for fork in fork_list:
             fork['sport_name'] = sport_name
-        RAW_FORKS_LIST.extend(json_data)
+        RAW_FORKS_LIST.extend(fork_list)
 
     RAW_FORKS_LIST = sorted(RAW_FORKS_LIST, key=lambda x: x['profit'], reverse=True)
 
@@ -205,7 +203,7 @@ def create_service_html(is_subscribed: bool):
     <body>
         <div class="header">
             <a href="#" onclick="showPage('main-page'); return false;">
-                <img src="{logo_src}" alt="Логотип Сервиса" class="service-logo">
+                <img src="{LOGO_SRC}" alt="Логотип Сервиса" class="service-logo">
                 <div class="service-title">LiteForks</div>
             </a>
         </div>
@@ -483,19 +481,15 @@ def create_service_html(is_subscribed: bool):
     return html_content
 
 
-def verify_telegram_signature(data):
-    # ... (Код функции verify_telegram_signature из предыдущих сообщений, без изменений) ...
-    if 'hash' not in data: return False
-    secret_key = hashlib.sha256(TELEGRAM_BOT_TOKEN.encode()).digest()
-    data_check_string = "\n".join(
-        f"{key}={value}" for key, value in sorted(data.items()) if key != 'hash'
-    )
-    hmac_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256)
-    return hmac_hash.hexdigest() == data['hash']
+
 
 
 @app.route('/')
 def home():
-    html_content = create_service_html(is_subscribed=True)
+    forks_data = get_json_data_from_git(path=DATA_FILE_PATH)
+    html_content = create_service_html(forks_data=forks_data, is_subscribed=True)
     return render_template_string(html_content)
-    
+
+
+# if __name__ == "__main__":
+#     app.run(debug=True)
