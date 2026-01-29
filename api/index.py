@@ -42,14 +42,12 @@ def get_json_data_from_git(path: str) -> Dict:
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
     }
-    try:
-        response = requests.get(
-            url=api_url,
-            headers=headers
-        )
-        return response.json()
-    except Exception as e:
-        return {}
+
+    response = requests.get(
+        url=api_url,
+        headers=headers
+    )
+    return response.json()
     
 
 def generate_fork_block_html(fork_data, include_event_link=False):
