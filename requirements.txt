@@ -2,3 +2,4 @@ Flask
 init-data-py
 PyJWT
 gunicorn
+requests
