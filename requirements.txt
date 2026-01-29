@@ -3,3 +3,4 @@ init-data-py
 PyJWT
 gunicorn
 requests
+flask-wtf
