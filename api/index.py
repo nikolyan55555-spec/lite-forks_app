@@ -82,7 +82,7 @@ def generate_fork_block_html(fork_data, include_event_link=False):
     """)
 
 
-def create_service_html(is_subscribed):
+def create_service_html(is_subscribed: bool):
 
     try:
         with open(LOGO_PATH, "rb") as f:
@@ -496,6 +496,6 @@ def verify_telegram_signature(data):
 
 @app.route('/')
 def home():
-
-    return 'Hello, World!'
+    html_content = create_service_html(is_subscribed=True)
+    return render_template_string(html_content)
     
