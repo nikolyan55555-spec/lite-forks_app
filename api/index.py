@@ -8,7 +8,7 @@ import logging
 
 import requests
 from flask import (
-    Flask, render_template, redirect, url_for, flash, request, session, render_template_string
+    Flask, render_template, redirect, url_for, flash, session, render_template_string
 )
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
@@ -23,6 +23,7 @@ logging.basicConfig(
 logger = logging.getLogger('FlaskAPP')
 
 SECRET_APP_KEY = os.environ.get("SECRET_APP_KEY")
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_APP_KEY
 app.config['SESSION_PROTECTION'] = 'strong'
@@ -41,25 +42,7 @@ SPORTS_MAPPER = {
     }
 }
 NOMINAL_VALUE = 1000
-
-USERS_DATA = {
-    'token123': {
-        'user_id': 1,
-        'is_subscribed': True,
-        'end_subscribe': '2026-12-31' # Формат YYYY-MM-DD
-    },
-    'token456': {
-        'user_id': 2,
-        'is_subscribed': False, # Нет подписки
-        'end_subscribe': '2024-01-01'
-    },
-    'token789': {
-        'user_id': 3,
-        'is_subscribed': True,
-        'end_subscribe': '2025-02-15'
-    }
-}
-
+FREE_PER_LIMIT = 2
 
 LOGO_PATH = 'static/logo.png'
 try:
@@ -140,6 +123,31 @@ def create_service_html(forks_data: Dict, is_subscribed: bool, user_id: str):
         RAW_FORKS_LIST.extend(fork_list)
 
     RAW_FORKS_LIST = sorted(RAW_FORKS_LIST, key=lambda x: x['profit'], reverse=True)
+    FREE_RAW_FORKS_LIST = [
+        fork for fork in RAW_FORKS_LIST 
+        if (100*(fork['profit']-NOMINAL_VALUE)/NOMINAL_VALUE) <= FREE_PER_LIMIT
+    ]
+    all_forks_count = len(RAW_FORKS_LIST)
+    free_forks_count = len(FREE_RAW_FORKS_LIST)
+    paid_forks_count = all_forks_count - free_forks_count
+
+    free_text = f"""Найдено: {all_forks_count} вилок \n
+    С прибылью более {FREE_PER_LIMIT}: {paid_forks_count} вилок
+    С прибылью до {FREE_PER_LIMIT}: {free_forks_count} вилок
+    Чтобы получать вилки с прибылью более {FREE_PER_LIMIT} необходима премиум подписка.
+    Оформить подписку можно через Telegram
+    """
+
+    paid_text = f"""Найдено: {all_forks_count} вилок \n
+    С прибылью более {FREE_PER_LIMIT}: {paid_forks_count} вилок
+    С прибылью до {FREE_PER_LIMIT}: {free_forks_count} вилок
+    """
+
+    if not is_subscribed:
+        RAW_FORKS_LIST = FREE_RAW_FORKS_LIST
+        text_1 = f"Чтобы получать вилки с прибылью более {FREE_PER_LIMIT}% необходима премиум подписка. Оформить подписку можно через Telegram"
+    else:
+        text_1 = f""
 
     for fork in RAW_FORKS_LIST:
         event_name = (fork['team_1'], fork['team_2'], fork['event_date'])
@@ -268,6 +276,35 @@ def create_service_html(forks_data: Dict, is_subscribed: bool, user_id: str):
             .logout-btn:hover {{
                 background-color: #c82333;
             }}
+            .telegram-promo-block {{
+                margin-top: 40px; /* <-- ВОТ ГЛАВНОЕ ИЗМЕНЕНИЕ: Отступ сверху */
+                text-align: center; /* Центрирует кнопку */
+                padding: 10px 0;
+                text-decoration: none !important;
+            }}
+
+            .telegram-btn {{
+                display: inline-block;
+                padding: 10px 15px;
+                background-color: #0088cc;
+                color: white;
+                text-decoration: none !important;
+                border-radius: 5px;
+                font-weight: bold;
+                font-size: 0.9em;
+                transition: background-color 0.3s;
+            }}
+            .telegram-btn:hover {{
+                background-color: #007bb5;
+                text-decoration: none !important; /* <-- УБИРАЕТ ПОДЧЕРКИВАНИЕ ПРИ НАВЕДЕНИИ КУРСОРА */
+            }}
+            .telegram-icon {{
+                width: 20px;   /* Регулируйте размер иконки */
+                height: auto;  /* Сохраняет пропорции */
+                margin-right: 4px; /* Отступ между иконкой и текстом */
+                vertical-align: middle; /* Выравнивает иконку по центру текста */
+            }}
+                            
         </style>
     </head>
     <body>
@@ -293,6 +330,12 @@ def create_service_html(forks_data: Dict, is_subscribed: bool, user_id: str):
                     <li><a href="#" onclick="showPage('fork-calculator-page')">🧮 Калькулятор вилок</a></li>
                     <li><a href="#" onclick="showPage('info-page')">ℹ️ Информация о вилках</a></li>
                 </ul>
+               <div class="telegram-promo-block"> 
+               <a href="https://t.me/LiteForksBot" target="_blank" class="telegram-btn"> 
+               <img src="static/telegram_2.svg" alt="Telegram Icon" class="telegram-icon">
+                    Перейти в Telegram
+               </a>
+               </div>
             </div>
 
             <div class="content-area">
@@ -300,6 +343,10 @@ def create_service_html(forks_data: Dict, is_subscribed: bool, user_id: str):
                 <!-- ГЛАВНАЯ СТРАНИЦА -->
                 <div id="main-page" class="page active">
                     <h2>Лучшие вилки (по событиям)</h2>
+                    <p>Количество вилок всего:&nbsp; <strong>{all_forks_count}</strong></p>
+                    <p>Количество вилок с прибылью более {FREE_PER_LIMIT}%:&nbsp; <strong>{paid_forks_count}</strong></p>
+                    <p>Количество вилок с прибылью до {FREE_PER_LIMIT}%:&nbsp; <strong>{free_forks_count}</strong></p>
+                    <strong>{text_1}</strong>
                     {main_page_content_html}
                 </div>
 
@@ -587,8 +634,10 @@ def validate_token():
     form = TokenForm()
 
     if form.validate_on_submit():
-        user_token = form.token.data
         
+        user_token = form.token.data
+        USERS_DATA = get_json_data_from_git(path=USERS_FILE_PATH)
+
         if user_token in USERS_DATA: 
             user_data = USERS_DATA[user_token]
             
@@ -613,7 +662,7 @@ def main():
     forks_data = get_json_data_from_git(path=DATA_FILE_PATH)
     html_content = create_service_html(
         forks_data=forks_data, 
-        is_subscribed=True,
+        is_subscribed=session['is_subscribed'],
         user_id=session['user_id']
     )
     return render_template_string(html_content)
