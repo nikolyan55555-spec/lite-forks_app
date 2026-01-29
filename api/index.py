@@ -55,6 +55,7 @@ def get_json_data_from_git(path: str) -> Dict:
         headers=headers
     )
     logger.info(f"RESPONSE: {response.status_code}")
+    logger.info(f"TOKEN: {GITHUB_TOKEN}")
     return response.json()
     
 
