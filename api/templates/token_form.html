@@ -2,50 +2,80 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ввод Токена</title>
-    <style>
-        .error { color: red; }
-        .success { color: green; }
-    </style>
+    <!-- Подключаем внешний файл стилей style.css -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>Подтверждение доступа</h1>
 
-    <!-- Отображение сообщений flash -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="{{ category }}">
-            {{ message }}
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+    <!-- Шапка (Header), скопированная из основного макета -->
+    <div class="header">
+        <!-- Ссылка на главную страницу приложения Flask -->
+        <a href="{{ url_for('index') }}">
+            <!-- Ссылка на файл логотипа в папке static -->
+            <img src="{{ url_for('static', filename='logo.png') }}" 
+                 alt="Логотип Сервиса" class="service-logo">
+            <div class="service-title">LiteForks</div>
+        </a>
+    </div>
 
-    <form method="POST" action="/validate_token">
+    <!-- Основной контейнер с формой, центрированный на странице -->
+    <div class="form-container">
         
-        <!-- Обязательный скрытый CSRF-токен -->
-        {{ form.hidden_tag() }}
+        <!-- Отображение сообщений flash (используется с Flask-WTF) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="{{ category }}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
 
-        <div>
-            <!-- Рендеринг поля Token -->
-            {{ form.token.label }}<br>
-            {{ form.token(size=40) }}
+        <!-- Форма, использующая объект form из Flask-WTF -->
+        <form method="POST" action="/validate_token">
             
-            <!-- Отображение ошибок валидации (если токен пустой или короткий) -->
-            {% if form.token.errors %}
-                <ul class="error">
-                    {% for error in form.token.errors %}
-                    <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        </div>
-        <br>
-        <div>
-            <!-- Рендеринг кнопки отправки -->
-            {{ form.submit() }}
-        </div>
-    </form>
+            <!-- Обязательный скрытый CSRF-токен от Flask-WTF -->
+            {{ form.hidden_tag() }}
+
+            <div>
+                <!-- Поле ввода токена -->
+                {{ form.token.label }}<br>
+                {{ form.token() }} 
+                
+                <!-- Отображение ошибок валидации -->
+                {% if form.token.errors %}
+                    <ul class="error">
+                        {% for error in form.token.errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+            
+            <div>
+                <!-- Кнопка подтверждения -->
+                {{ form.submit() }}
+            </div>
+
+            <!-- Блок с инструкциями и ссылкой на Telegram -->
+            <div class="telegram-info">
+                <!-- Фраза находится выше -->
+                <p class="telegram-info-text">Чтобы получить токен пройдите регистрацию в Telegram.</p>
+                
+                <!-- Ссылка с иконкой ниже -->
+                <a href="https://t.me/LiteForksBot" target="_blank" rel="noopener noreferrer">
+                    <!-- Ссылка на иконку Telegram в папке static -->
+                    <img src="{{ url_for('static', filename='telegram.svg') }}" 
+                         alt="Telegram Icon" class="telegram-icon">
+                    Перейти в Telegram-бот
+                </a>
+            </div>
+
+        </form>
+    </div>
+
 </body>
 </html>

@@ -7,10 +7,13 @@ from datetime import datetime
 import logging
 
 import requests
-from flask import Flask, render_template, redirect, url_for, flash, request, render_template_string
+from flask import (
+    Flask, render_template, redirect, url_for, flash, request, session, render_template_string
+)
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, Length
+from functools import wraps
 
 
 logging.basicConfig(
@@ -19,10 +22,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger('FlaskAPP')
 
-SECRET_APP_KEY = 'gT8XzLyP5qR2sT4vW7yB!E(H+MbQeThWmZq4t7w9z$C&F)J@NcRfUjXn2r5u8x/A?D(G+KaPdSgVkYp3s6v9y$' 
-
+SECRET_APP_KEY = os.environ.get("SECRET_APP_KEY")
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_APP_KEY
+app.config['SESSION_PROTECTION'] = 'strong'
 
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_OWNER = 'nikolyan55555-spec'
@@ -38,6 +41,25 @@ SPORTS_MAPPER = {
     }
 }
 NOMINAL_VALUE = 1000
+
+USERS_DATA = {
+    'token123': {
+        'user_id': 1,
+        'is_subscribed': True,
+        'end_subscribe': '2026-12-31' # Формат YYYY-MM-DD
+    },
+    'token456': {
+        'user_id': 2,
+        'is_subscribed': False, # Нет подписки
+        'end_subscribe': '2024-01-01'
+    },
+    'token789': {
+        'user_id': 3,
+        'is_subscribed': True,
+        'end_subscribe': '2025-02-15'
+    }
+}
+
 
 LOGO_PATH = 'static/logo.png'
 try:
@@ -56,13 +78,14 @@ def get_json_data_from_git(path: str) -> Dict:
         "Authorization": f"token {GITHUB_TOKEN}",
     }
 
-    response = requests.get(
-        url=api_url,
-        headers=headers
-    )
-    logger.info(f"RESPONSE: {response.status_code}")
-    logger.info(f"TOKEN: {GITHUB_TOKEN}")
-    return response.json()
+    try:
+        response = requests.get(
+            url=api_url,
+            headers=headers
+        )
+        return response.json()
+    except Exception as e:
+        return {}
     
 
 def generate_fork_block_html(fork_data, include_event_link=False):
@@ -108,7 +131,7 @@ def generate_fork_block_html(fork_data, include_event_link=False):
     """)
 
 
-def create_service_html(forks_data: Dict, is_subscribed: bool):
+def create_service_html(forks_data: Dict, is_subscribed: bool, user_id: str):
 
     RAW_FORKS_LIST = []
     for sport_name, fork_list in forks_data.items():
@@ -167,7 +190,16 @@ def create_service_html(forks_data: Dict, is_subscribed: bool):
         <title>LiteForks</title>
         <style>
             body {{ font-family: sans-serif; margin: 0; padding: 0; background-color: #f0f0f0; color: #333; }}
-            .header {{ background-color: #000; color: #fff; padding: 10px 20px; display: flex; align-items: center; }}
+            .header {{ 
+                background-color: #000; 
+                color: #fff; 
+                padding: 10px 20px; 
+                display: flex; 
+                align-items: center;
+                justify-content: space-between; /* ДОБАВЛЕНО: Распределяет элементы по ширине */
+                width: 100%; /* ДОБАВЛЕНО: Гарантирует полную ширину */
+                box-sizing: border-box; /* Учитывает padding в ширине */
+            }}
             .header a {{ color: inherit; text-decoration: none; display: flex; align-items: center; }}
             .logo-placeholder {{ width: 40px; height: 40px; background-color: #007bff; margin-right: 15px; border-radius: 50%; }}
             .service-title {{ font-size: 1.5em; font-weight: bold; }}
@@ -200,16 +232,41 @@ def create_service_html(forks_data: Dict, is_subscribed: bool):
             .profit-value {{ color: green; font-size: 1.1em; }}
             .bets-header-row {{ background-color: #eee; font-size: 0.9em; }}
             .service-logo {{
-                width: 45px; /* Задайте нужный размер */
+                width: 45px;
                 height: 50px;
-                margin-right: 10px; /* Отступ от названия сервиса */
-                object-fit: cover; /* Чтобы изображение хорошо вписывалось в размеры */
+                margin-right: 10px;
+                object-fit: cover;
             }}
             .service-title {{ 
                 font-size: 1.5em; 
                 font-weight: bold;
-                font-style: italic; /* Делает текст курсивом */
-                /* text-shadow: 1px 1px 2px #aaa; Можно добавить легкую тень для "красоты" */
+                font-style: italic;
+            }}
+            .user-profile-area {{
+                display: flex;
+                align-items: center;
+                gap: 15px;
+            }}
+            .user-info {{
+                display: flex;
+                align-items: center;
+                color: #fff;
+            }}
+            .user-icon {{
+                font-size: 1.5em;
+                margin-right: 8px;
+            }}
+            .logout-btn {{
+                padding: 8px 12px;
+                background-color: #dc3545;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                text-decoration: none;
+            }}
+            .logout-btn:hover {{
+                background-color: #c82333;
             }}
         </style>
     </head>
@@ -219,6 +276,13 @@ def create_service_html(forks_data: Dict, is_subscribed: bool):
                 <img src="{LOGO_SRC}" alt="Логотип Сервиса" class="service-logo">
                 <div class="service-title">LiteForks</div>
             </a>
+            <div class="user-profile-area">
+                <div class="user-info">
+                    <span class="user-icon">👤</span> <!-- Иконка пользователя -->
+                    <span>ID: <strong id="user-id">{user_id}</strong></span> <!-- ID пользователя -->
+                </div>
+                <a href="/logout" class="logout-btn">Выйти</a>
+            </div>
         </div>
 
         <div class="main-container">
@@ -500,9 +564,21 @@ class TokenForm(FlaskForm):
     submit = SubmitField('Подтвердить')
 
 
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            flash("Пожалуйста, введите токен для доступа к основному функционалу.", "warning")
+            return redirect(url_for('validate_token'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 @app.route('/')
 def index():
-    # Перенаправляем на страницу ввода токена при входе
+    # Проверяем, авторизован ли пользователь и активна ли его подписка
+    if session.get('logged_in') and session.get('is_subscribed'):
+        return redirect(url_for('main'))
     return redirect(url_for('validate_token'))
 
 
@@ -511,28 +587,46 @@ def validate_token():
     form = TokenForm()
 
     if form.validate_on_submit():
-        # Если данные валидны и метод POST
         user_token = form.token.data
         
-        # *** ЗДЕСЬ ВАША ЛОГИКА ПРОВЕРКИ ТОКЕНА ***
-        # Например, проверка в базе данных или сравнение с переменной окружения
-        
-        print(f"Получен токен: {user_token}")
-        flash('Токен успешно принят и обработан!', 'success')
-        
-        # Перенаправляем пользователя на основной функционал приложения
-        return redirect(url_for('main_functionality'))
+        if user_token in USERS_DATA: 
+            user_data = USERS_DATA[user_token]
+            
+            is_subscribed = user_data.get('is_subscribed', False)        
 
-    # Если метод GET или валидация не пройдена
+            # Если все ОК, сохраняем данные в сессию
+            session['logged_in'] = True
+            session['user_id'] = user_data['user_id']
+            session['is_subscribed'] = is_subscribed
+
+            return redirect(url_for('main'))
+        else:
+            flash('Неверный токен. Попробуйте еще раз.', 'error')
+            return render_template('token_form.html', form=form)
+
     return render_template('token_form.html', form=form)
 
 
 @app.route('/main')
-def home():
+@login_required 
+def main():
     forks_data = get_json_data_from_git(path=DATA_FILE_PATH)
-    html_content = create_service_html(forks_data=forks_data, is_subscribed=True)
+    html_content = create_service_html(
+        forks_data=forks_data, 
+        is_subscribed=True,
+        user_id=session['user_id']
+    )
     return render_template_string(html_content)
 
 
-if __name__ == "__main__":
-    app.run(debug=True)
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None) 
+    session.pop('user_id', None)
+    session.pop('is_subscribed', None)
+    flash("Вы вышли из системы.", "info")
+    return redirect(url_for('index'))
+
+
+# if __name__ == "__main__":
+#     app.run(debug=True)

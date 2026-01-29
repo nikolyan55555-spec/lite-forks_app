@@ -1,0 +1,125 @@
+/* Стили для шапки (Header) */
+.header { 
+    background-color: #000; 
+    color: #fff; 
+    padding: 10px 20px; 
+    display: flex; 
+    align-items: center; 
+    /* Делаем шапку "прилипшей" к верху страницы */
+    position: fixed; 
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000; /* Гарантируем, что шапка поверх остального контента */
+}
+.header a { 
+    color: inherit; 
+    text-decoration: none; 
+    display: flex; 
+    align-items: center; 
+}
+.service-logo {
+    width: 45px; /* Задайте нужный размер */
+    height: 50px;
+    margin-right: 10px; /* Отступ от названия сервиса */
+    object-fit: cover; 
+}
+.service-title { 
+    font-size: 1.5em; 
+    font-weight: bold;
+    font-style: italic; 
+}
+
+/* Общие стили для центрирования всего содержимого на странице ниже шапки */
+body {
+    /* Добавляем отступ сверху, чтобы контент не скрывался под шапкой */
+    padding-top: 70px; 
+    display: flex;
+    justify-content: center; /* Центрирование по горизонтали */
+    align-items: center;     /* Центрирование по вертикали */
+    min-height: 100vh;       /* Занимаем всю высоту экрана */
+    margin: 0;
+    font-family: sans-serif;
+    background-color: #f4f4f4; /* Светлый фон страницы */
+}
+
+/* Стилизация контейнера формы (тускло-желтая рамка) */
+.form-container {
+    background-color: #ffffe0; /* Тускло-желтый цвет (Light Yellow) */
+    border: 2px solid #e0e0a0;
+    padding: 20px; /* Компактный отступ внутри контейнера */
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center; /* Центрируем текст внутри контейнера */
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Стиль для метки "Введите Токен" (больше и жирнее) */
+label {
+    font-size: 1.1em; 
+    font-weight: bold;
+    display: block; 
+    margin-bottom: 8px; 
+}
+
+/* Стилизация поля ввода */
+input[type="text"] {
+    width: 80%;
+    padding: 8px; 
+    margin-bottom: 15px; /* Отступ между полем ввода и кнопкой */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* Стилизация кнопки "Подтвердить" */
+button {
+    background-color: #007BFF;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px; 
+    margin-top: 10px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* Стили сообщений обратной связи (Flash messages) */
+.error { color: red; list-style-type: none; padding: 0; margin-top: 5px; }
+.success { color: green; }
+
+/* Блок с информацией о Telegram */
+.telegram-info {
+    margin-top: 10px; /* Отступ всего блока от кнопки */
+    padding-top: 5px; /* Отступ между линией и текстом */
+    border-top: 1px solid #e0e0a0; /* Разделительная линия */
+    font-size: 0.9em;
+}
+
+/* Параграф с фразой "Чтобы получить токен..." */
+.telegram-info-text {
+    margin-top: 15px;
+    margin-bottom: 10px; /* Отступ под фразой */
+    color: #333; 
+}
+
+/* Ссылка на Telegram-бот */
+.telegram-info a {
+    text-decoration: none;
+    color: #000000; /* Цвет текста ссылки - черный */
+    font-weight: bold;
+    display: inline-flex; /* Используем flexbox для выравнивания иконки и текста */
+    align-items: center; 
+    justify-content: center;
+}
+
+/* Иконка Telegram (увеличенный размер) */
+.telegram-icon {
+    width: 28px; 
+    height: 28px;
+    margin-right: 8px; 
+}
