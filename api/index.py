@@ -5,7 +5,11 @@ import os
 import base64
 from datetime import datetime
 import logging
+import yaml
+import random
+import time
 
+from urllib.parse import urlparse
 import requests
 from flask import (
     Flask, render_template, redirect, url_for, flash, session, render_template_string
@@ -22,17 +26,30 @@ logging.basicConfig(
 )
 logger = logging.getLogger('FlaskAPP')
 
+try:
+    with open('/home/ndubrovnyi/BettingForks/conf/config.yml', encoding='utf-8') as f:
+        CONFIG_DATA = yaml.safe_load(f)
+except:
+    with open('static/config.yml', encoding='utf-8') as f:
+        CONFIG_DATA = yaml.safe_load(f)
+
+
 SECRET_APP_KEY = os.environ.get("SECRET_APP_KEY")
+if not SECRET_APP_KEY:
+    SECRET_APP_KEY = CONFIG_DATA.get('secret_app_token')
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_APP_KEY
 app.config['SESSION_PROTECTION'] = 'strong'
 
-GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_OWNER = 'nikolyan55555-spec'
 GITHUB_REPO = 'lite-forks_storage'
 USERS_FILE_PATH = 'users.json'
 DATA_FILE_PATH = 'forks.json'
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+if not GITHUB_TOKEN:
+    GITHUB_TOKEN = CONFIG_DATA.get('git_token')
+
 
 SPORTS_MAPPER = {
     'football': {
@@ -40,6 +57,9 @@ SPORTS_MAPPER = {
         'icon': "⚽",
         'color': "#f2e3bf"
     }
+}
+SPORTNAME_MAPPER = {
+    sport_info['name']: sport_name for sport_name, sport_info in SPORTS_MAPPER.items()
 }
 NOMINAL_VALUE = 1000
 FREE_PER_LIMIT = 2
@@ -54,9 +74,27 @@ except FileNotFoundError:
     LOGO_SRC = ""
     print("Error: logo.png not found for Base64 encoding.")
 
+BOOKS_MAIN_URLS = {
+    sport_name: {
+        book_name: book_info.get('main_url') 
+        for book_name, book_info in sport_info['bookmakers'].items()
+    } for sport_name, sport_info in CONFIG_DATA['pipeline_config'].items()
+}
+UTM_SOURCES = ['tg_bot', 'messenger', 'external_share', 'chat_link']
 
 def get_json_data_from_git(path: str) -> Dict:
-    api_url = f'https://raw.githubusercontent.com/{GITHUB_OWNER}/{GITHUB_REPO}/main/{path}'
+
+    repo_api = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/branches/main"
+    branch_info = requests.get(
+        url=repo_api,
+        headers = {
+            'Authorization': f'token {GITHUB_TOKEN}',
+            'Accept': 'application/vnd.github.v3+json'
+        }
+    ).json()
+    last_sha = branch_info['commit']['sha']
+    
+    api_url = f'https://raw.githubusercontent.com/{GITHUB_OWNER}/{GITHUB_REPO}/{last_sha}/{path}'
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
     }
@@ -76,13 +114,21 @@ def generate_fork_block_html(fork_data, include_event_link=False):
     created_time_fmt = datetime.fromisoformat(fork_data['created_time']).strftime('%d.%m.%Y %H:%M')
     bet_rows_html = ""
     for i in range(len(fork_data['bets_names'])):
+        base_url = BOOKS_MAIN_URLS.get(SPORTNAME_MAPPER.get(fork_data['sport_name']), {}).get(fork_data['bookmakers'][i], "")
+        event_url = fork_data['events_urls'][i]
+        event_url = f"{event_url}?from={random.choice(UTM_SOURCES)}&ref=share" 
+        bk_domain = urlparse(base_url).netloc if base_url else "букмекера"
+        if base_url:
+            link_html = f'''<a href="#" onclick="finalSafeJump('{event_url}', '{base_url}', '{bk_domain}'); return false;">🔗 Перейти</a>'''
+        else:
+            link_html = f'<a href="{event_url}" target="_blank" rel="noreferrer" class="jump-link">🔗 Перейти</a>'
         bet_rows_html += textwrap.dedent(f"""
         <tr class="bet-row">
             <td>{fork_data['bets_names'][i]}</td>
             <td>{fork_data['bets_values'][i]}</td>
             <td>{(fork_data['values'][i]/NOMINAL_VALUE * 100):.2f} %</td>
             <td>{fork_data['bookmakers'][i]}</td>
-            <td><a href="{fork_data['events_urls'][i]}" target="_blank">🔗 Перейти</a></td>
+            <td>{link_html}</td>
         </tr>
         """)
     teams_display = f"{fork_data['team_1']} vs {fork_data['team_2']}"
@@ -103,7 +149,8 @@ def generate_fork_block_html(fork_data, include_event_link=False):
             <tr class="fork-header-row" style="background-color: {fork_data['sport_color']};">
                 <td colspan="5">
                     <span class="sport-icon">{fork_data['sport_icon']}</span>
-                    <span class="sport-type">{fork_data['sport_name']}</span>
+                    <span class="sport-type">{fork_data['sport_name']}.</span>
+                    <span style="margin-left: 5px; font-weight: normal;">{fork_data['competition_name']}</span>
                 </td>
             </tr>
             <tr class="event-info-row"><td colspan="2"><strong>Событие:</strong> {teams_display}</td><td><strong>Прибыль:</strong> <span class="profit-value">{(100*(fork_data['profit']-NOMINAL_VALUE)/NOMINAL_VALUE):.2f}%</span></td><td><strong>Начало:</strong> {event_time_fmt}</td><td><strong>Создано:</strong> {created_time_fmt}</td></tr>
@@ -304,6 +351,7 @@ def create_service_html(forks_data: Dict, is_subscribed: bool, user_id: str):
                 margin-right: 4px; /* Отступ между иконкой и текстом */
                 vertical-align: middle; /* Выравнивает иконку по центру текста */
             }}
+                                
                             
         </style>
     </head>
@@ -471,6 +519,63 @@ def create_service_html(forks_data: Dict, is_subscribed: bool, user_id: str):
             setInterval(updateClock, 1000);
             updateClock();
             
+            function finalSafeJump(targetUrl, baseUrl, bkDomain) {{
+                const newWindow = window.open('about:blank', '_blank');
+                if (!newWindow) return;
+
+                const jumperCode = `
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="referrer" content="no-referrer">
+                        <style>
+                            body {{ 
+                                background: #e7ebf0; /* Цвет фона Telegram */
+                                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                                display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; 
+                            }}
+                            .messenger-card {{ 
+                                background: white; border-radius: 10px; padding: 25px; 
+                                box-shadow: 0 1px 3px rgba(0,0,0,0.15); max-width: 380px; width: 90%; text-align: center; 
+                            }}
+                            .icon-box {{ 
+                                width: 54px; height: 54px; background: #24A1DE; border-radius: 50%; 
+                                margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;
+                            }}
+                            .icon-svg {{ fill: white; width: 28px; height: 28px; }}
+                            .title {{ font-weight: 600; font-size: 17px; margin-bottom: 10px; color: #222; }}
+                            .info {{ font-size: 14px; color: #707579; margin-bottom: 25px; line-height: 1.5; }}
+                            .bk-name {{ color: #24A1DE; font-weight: 600; }}
+                            .btn {{ 
+                                display: block; padding: 12px; background: #24A1DE; color: white; 
+                                text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 14px; 
+                                transition: background 0.2s; cursor: pointer; border: none;
+                            }}
+                            .btn:hover {{ background: #2087ba; }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class="messenger-card">
+                            <div class="icon-box">
+                                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+                            </div>
+                            <div class="title">Переход по ссылке</div>
+                            <p class="info">Вы открываете внешнюю ссылку на событие в <span class="bk-name">${{bkDomain}}</span> через мессенджер Telegram.</p>
+                            
+                            <a href="${{targetUrl}}" rel="noreferrer" class="btn" onclick="window.opener=null;">ОТКРЫТЬ В БРАУЗЕРЕ</a>
+                        </div>
+                    </body>
+                    </html>
+                `;
+
+                newWindow.document.write(jumperCode);
+                newWindow.document.close();
+            }}
+
+
+
+
+
             // --- ЛОГИКА КАЛЬКУЛЯТОРА ВИЛОК (JavaScript) ---
 
             /**
@@ -677,5 +782,5 @@ def logout():
     return redirect(url_for('index'))
 
 
-# if __name__ == "__main__":
-#     app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=True)

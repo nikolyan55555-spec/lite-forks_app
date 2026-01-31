@@ -1,0 +1,162 @@
+db_config:
+  dbname: "betting_forks"
+  user: "postgres"
+  password: "130795"
+  host: "localhost"
+  port: "5432"
+
+pipeline_config:
+  
+  football:
+    clean_period_hours: 4
+    fetch_new_events_period_minutes: 240
+    update_line_events_params:
+      - period: 240
+        minutes_sleep: 10
+      - period: 4320
+        minutes_sleep: 100
+      - period: 10080
+        minutes_sleep: 720
+    
+    bookmakers:
+      
+      pari:
+        main_url: https://pari.ru/sports
+        scrapper_params:
+          headers: 
+            name: "scrapeops"
+            params:
+              url: "http://headers.scrapeops.io/v1/browser-headers?api_key=a36a97bf-5102-43ce-80a0-ff0d3ac927b0"
+          timeout: 15
+          time_sleep: 0.1
+
+  
+      fonbet:
+        main_url: https://fon.bet/sports
+        scrapper_params:
+          headers: 
+            name: "scrapeops"
+            params:
+              url: "http://headers.scrapeops.io/v1/browser-headers?api_key=a36a97bf-5102-43ce-80a0-ff0d3ac927b0"
+          timeout: 15
+          time_sleep: 0.1
+
+      leon:
+        main_url: https://leon.ru/bets
+        scrapper_params:
+          headers: 
+            name: "scrapeops"
+            params:
+              url: "http://headers.scrapeops.io/v1/browser-headers?api_key=a36a97bf-5102-43ce-80a0-ff0d3ac927b0"
+          timeout: 15
+          time_sleep: 0.1
+
+      maraphonebet:
+        main_url: https://www.marathonbet.ru/su/all-events?cpcids=all&cppcids=all
+        scrapper_params:
+          proxies:
+            name: local
+            params:
+              host: http://127.0.0.1:18080
+          headers: 
+            name: "scrapeops"
+            params:
+              url: "http://headers.scrapeops.io/v1/browser-headers?api_key=a36a97bf-5102-43ce-80a0-ff0d3ac927b0"
+          timeout: 15
+          time_sleep: 0.5
+  
+      baltbet:
+        main_url: https://baltbet.ru/prematch?period=all
+        scrapper_params:
+          headers: 
+            name: "scrapeops"
+            params:
+              url: "http://headers.scrapeops.io/v1/browser-headers?api_key=a36a97bf-5102-43ce-80a0-ff0d3ac927b0"
+              additional_headers: 
+                bb_appsource: 'UniRu'
+          timeout: 15
+          time_sleep: 0.1
+
+      winline:
+        main_url: https://winline.ru/stavki
+        scrapper_params:
+          main_timeout: 300
+          local_scrapper_params:
+            timeout: 40
+
+      zenit:
+        main_url: https://zenit.win/line
+        scrapper_params:
+          headers: 
+            name: "scrapeops"
+            params:
+              url: "http://headers.scrapeops.io/v1/browser-headers?api_key=a36a97bf-5102-43ce-80a0-ff0d3ac927b0"
+              additional_headers: 
+                imprinthash: "000000000"
+          timeout: 15
+          time_sleep: 0.5
+
+      liga_stavok:
+        main_url: https://www.ligastavok.ru/sports
+        scrapper_params:
+          headers: 
+            name: "scrapeops"
+            params:
+              url: "http://headers.scrapeops.io/v1/browser-headers?api_key=a36a97bf-5102-43ce-80a0-ff0d3ac927b0"
+              additional_headers: 
+                content-type: "application/json"
+                Origin: "https://www.ligastavok.ru"
+          timeout: 15
+          time_sleep: 1.5
+
+      olimpbet:
+        main_url: https://www.olimp.bet/line
+        scrapper_params:
+          retries: 3
+          threads: 10
+          timeout: 10
+          time_sleep: 0
+          headers: 
+            name: "scrapeops"
+            params:
+              url: "http://headers.scrapeops.io/v1/browser-headers?api_key=a36a97bf-5102-43ce-80a0-ff0d3ac927b0"
+          local_scrapper_params:
+            timeout: 360
+
+      tennisi:
+        main_url: https://tennisi.bet/sport/football
+        scrapper_params:
+          headers: 
+            name: "scrapeops"
+            params:
+              url: "http://headers.scrapeops.io/v1/browser-headers?api_key=a36a97bf-5102-43ce-80a0-ff0d3ac927b0"
+              additional_headers: 
+                bb_appsource: 'UniRu'
+          timeout: 15
+          time_sleep: 0.1
+
+      betm:
+        main_url: https://bet-m.ru/ru/
+        scrapper_params:
+          main_timeout: 360
+          local_scrapper_params:
+            timeout: 40
+
+      # betcity:
+      #   scrapper_params:
+      #     main_timeout: 360
+      #     local_scrapper_params:
+      #       timeout: 40
+
+      bettery:
+        main_url: https://bettery.ru/sports
+        scrapper_params:
+          headers: 
+            name: "scrapeops"
+            params:
+              url: "http://headers.scrapeops.io/v1/browser-headers?api_key=a36a97bf-5102-43ce-80a0-ff0d3ac927b0"
+          timeout: 15
+          time_sleep: 0.1
+
+
+# 8385615154:AAEwVHr3LcUVkDAL5NiJSImOy2trol_YRp0
