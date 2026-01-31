@@ -30,7 +30,7 @@ try:
     with open('/home/ndubrovnyi/BettingForks/conf/config.yml', encoding='utf-8') as f:
         CONFIG_DATA = yaml.safe_load(f)
 except:
-    with open('static/config.yml', encoding='utf-8') as f:
+    with open('api/static/config.yml', encoding='utf-8') as f:
         CONFIG_DATA = yaml.safe_load(f)
 
 
