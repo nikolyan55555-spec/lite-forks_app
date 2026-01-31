@@ -4,3 +4,4 @@ PyJWT
 gunicorn
 requests
 flask-wtf
+pyyaml
